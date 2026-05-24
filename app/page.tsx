@@ -15,16 +15,6 @@ interface Post {
   created_at: string;
 }
 
-interface PostLog {
-  id: number;
-  post_id: number;
-  title_used: string;
-  posted_at: string;
-  status: string;
-  category: string;
-  location: string;
-}
-
 function getWeekNumber(): number {
   const now = new Date();
   const start = new Date(now.getFullYear(), 0, 1);
@@ -41,7 +31,6 @@ function getWeeklyPosts(posts: Post[], weekOffset: number): Post[] {
 
 export default function Dashboard() {
   const [allPosts, setAllPosts] = useState<Post[]>([]);
-  const [logs, setLogs] = useState<PostLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [weekOffset, setWeekOffset] = useState(0);
   const [showAll, setShowAll] = useState(false);
@@ -50,7 +39,6 @@ export default function Dashboard() {
   useEffect(() => {
     fetch("/api/posts").then((r) => r.json()).then((d) => {
       setAllPosts(d.posts || []);
-      setLogs(d.logs || []);
       setLoading(false);
     });
   }, []);
@@ -64,7 +52,6 @@ export default function Dashboard() {
     const data = await res.json();
     if (res.ok) {
       alert(`Queued! Run:\n\n${data.command}`);
-      const r = await fetch("/api/posts"); const d = await r.json(); setLogs(d.logs || []);
     } else alert(data.error);
   }
 
@@ -197,47 +184,6 @@ export default function Dashboard() {
               })}
             </div>
           )}
-        </div>
-
-        {/* Activity + CLI side by side */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-6">
-          {/* Recent Activity */}
-          {logs.length > 0 && (
-            <div className="rounded-xl overflow-hidden animate-fade-up" style={{ background: "var(--card)", border: "1px solid var(--border)", boxShadow: "0 1px 3px rgba(0,0,0,0.04)", animationDelay: "100ms" }}>
-              <div className="px-4 py-3" style={{ borderBottom: "1px solid var(--border)" }}>
-                <h2 className="text-xs font-bold tracking-wider uppercase" style={{ color: "var(--muted)" }}>Activity</h2>
-              </div>
-              <div>
-                {logs.slice(0, 6).map((log, i) => (
-                  <div key={log.id} className="flex items-center gap-2.5 px-4 py-2.5 text-[12px]"
-                    style={{ borderBottom: i < 5 ? "1px solid var(--muted-light)" : "none" }}>
-                    <span className="w-2 h-2 rounded-full flex-shrink-0" style={{
-                      background: log.status === "posted" ? "var(--success)" : log.status === "pending" ? "#F59F00" : "#E03131"
-                    }} />
-                    <span className="flex-1 truncate" style={{ color: "var(--foreground)" }}>{log.title_used}</span>
-                    <span style={{ color: "var(--muted)" }}>{new Date(log.posted_at + "Z").toLocaleDateString()}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* CLI */}
-          <div className="rounded-xl overflow-hidden animate-fade-up" style={{ background: "#1E1E1E", border: "1px solid #333", boxShadow: "0 1px 3px rgba(0,0,0,0.1)", animationDelay: "150ms" }}>
-            <div className="px-4 py-3 flex items-center gap-2" style={{ borderBottom: "1px solid #333" }}>
-              <span className="w-2.5 h-2.5 rounded-full bg-red-500" />
-              <span className="w-2.5 h-2.5 rounded-full bg-yellow-500" />
-              <span className="w-2.5 h-2.5 rounded-full bg-green-500" />
-              <span className="text-[11px] font-mono ml-2 text-gray-500">terminal</span>
-            </div>
-            <div className="p-4 font-mono text-[12px] leading-relaxed space-y-1.5">
-              <p><span className="text-green-400">$</span> <span className="text-gray-300">npx ts-node cli/post.ts</span> <span className="text-amber-400">list</span></p>
-              <p><span className="text-green-400">$</span> <span className="text-gray-300">npx ts-node cli/post.ts</span> <span className="text-amber-400">post 1</span></p>
-              <p><span className="text-green-400">$</span> <span className="text-gray-300">npx ts-node cli/post.ts</span> <span className="text-amber-400">rotate 10</span></p>
-              <p><span className="text-green-400">$</span> <span className="text-gray-300">npx ts-node cli/post.ts</span> <span className="text-amber-400">status</span></p>
-              <p><span className="text-green-400">$</span> <span className="text-gray-300">npx ts-node cli/post.ts</span> <span className="text-amber-400">cooldown</span></p>
-            </div>
-          </div>
         </div>
       </div>
     </div>

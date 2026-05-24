@@ -227,20 +227,4 @@ describe("Dashboard", () => {
     render(<Dashboard />);
     await waitFor(() => expect(screen.getByText("No templates yet")).toBeInTheDocument());
   });
-
-  it("renders the Activity panel when logs exist", async () => {
-    fetchMock.mockResolvedValue({
-      ok: true,
-      json: async () => ({
-        posts: makePosts(3),
-        logs: [
-          { id: 1, post_id: 1, title_used: "Logged A", posted_at: "2026-01-01 00:00:00", status: "posted", category: "services", location: "springfield" },
-          { id: 2, post_id: 2, title_used: "Logged B", posted_at: "2026-01-02 00:00:00", status: "pending", category: "services", location: "springfield" },
-        ],
-      }),
-    });
-    render(<Dashboard />);
-    await waitFor(() => expect(screen.getByText("Activity")).toBeInTheDocument());
-    expect(screen.getByText("Logged A")).toBeInTheDocument();
-  });
 });
