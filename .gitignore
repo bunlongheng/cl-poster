@@ -12,6 +12,10 @@
 
 # testing
 /coverage
+/playwright-report
+/test-results
+/blob-report
+/playwright/.cache
 
 # next.js
 /.next/
@@ -39,3 +43,10 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# sqlite WAL sidecars (the .db itself is committed as the post store)
+cl-poster.db-shm
+cl-poster.db-wal
+
+# craigslist poster's persistent browser profile
+/.cl-browser-profile

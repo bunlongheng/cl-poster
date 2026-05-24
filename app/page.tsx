@@ -1,65 +1,245 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import { useEffect, useState } from "react";
+import Link from "next/link";
+
+interface Post {
+  id: number;
+  title: string;
+  description: string;
+  category: string;
+  subcategory: string;
+  location: string;
+  email: string;
+  images: string;
+  created_at: string;
+}
+
+interface PostLog {
+  id: number;
+  post_id: number;
+  title_used: string;
+  posted_at: string;
+  status: string;
+  category: string;
+  location: string;
+}
+
+function getWeekNumber(): number {
+  const now = new Date();
+  const start = new Date(now.getFullYear(), 0, 1);
+  return Math.floor((now.getTime() - start.getTime()) / (7 * 24 * 60 * 60 * 1000));
+}
+
+function getWeeklyPosts(posts: Post[], weekOffset: number): Post[] {
+  if (posts.length === 0) return [];
+  const week = getWeekNumber() + weekOffset;
+  const totalWeeks = Math.ceil(posts.length / 10);
+  const start = (week % totalWeeks) * 10;
+  return posts.slice(start, start + 10);
+}
+
+export default function Dashboard() {
+  const [allPosts, setAllPosts] = useState<Post[]>([]);
+  const [logs, setLogs] = useState<PostLog[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [weekOffset, setWeekOffset] = useState(0);
+  const [showAll, setShowAll] = useState(false);
+  const [copied, setCopied] = useState<number | null>(null);
+
+  useEffect(() => {
+    fetch("/api/posts").then((r) => r.json()).then((d) => {
+      setAllPosts(d.posts || []);
+      setLogs(d.logs || []);
+      setLoading(false);
+    });
+  }, []);
+
+  const displayPosts = showAll ? allPosts : getWeeklyPosts(allPosts, weekOffset);
+  const totalWeeks = Math.ceil(allPosts.length / 10);
+  const currentWeek = (getWeekNumber() + weekOffset) % totalWeeks;
+
+  async function handlePostNow(postId: number) {
+    const res = await fetch("/api/post-now", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ postId }) });
+    const data = await res.json();
+    if (res.ok) {
+      alert(`Queued! Run:\n\n${data.command}`);
+      const r = await fetch("/api/posts"); const d = await r.json(); setLogs(d.logs || []);
+    } else alert(data.error);
+  }
+
+  async function handleDelete(id: number) {
+    if (!confirm("Delete this template?")) return;
+    await fetch(`/api/posts/${id}`, { method: "DELETE" });
+    setAllPosts(allPosts.filter((p) => p.id !== id));
+  }
+
+  async function handleCopy(post: Post) {
+    await navigator.clipboard.writeText(`${post.title}\n\n${post.description}`);
+    setCopied(post.id);
+    setTimeout(() => setCopied(null), 1500);
+  }
+
+  if (loading) return (
+    <div className="min-h-screen flex items-center justify-center" style={{ background: "var(--background)" }}>
+      <div className="flex flex-col items-center gap-3">
+        <div className="w-8 h-8 border-2 border-[var(--accent)] border-t-transparent rounded-full animate-spin" />
+        <p style={{ color: "var(--muted)" }} className="text-sm">Loading posts...</p>
+      </div>
+    </div>
+  );
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <div className="min-h-screen" style={{ background: "var(--background)" }}>
+      {/* Top bar */}
+      <div style={{ background: "var(--card)", borderBottom: "1px solid var(--border)" }}>
+        <div className="max-w-6xl mx-auto px-8 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold text-sm" style={{ background: "var(--accent)" }}>CL</div>
+            <div>
+              <h1 className="text-lg font-bold" style={{ color: "var(--foreground)" }}>CL Poster</h1>
+              <p className="text-xs" style={{ color: "var(--muted)" }}>{allPosts.length} templates &middot; 10/week rotation</p>
+            </div>
+          </div>
+          <Link href="/posts/new"
+            className="px-4 py-2 rounded-lg text-sm font-semibold text-white transition-all hover:shadow-lg hover:scale-[1.02] active:scale-[0.98]"
+            style={{ background: "var(--accent)" }}>
+            + New Post
+          </Link>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+      </div>
+
+      <div className="max-w-6xl mx-auto px-8 py-6">
+        {/* Week navigation */}
+        <div className="flex items-center justify-between mb-5 animate-fade-up">
+          <div className="flex items-center gap-2">
+            <button onClick={() => { setShowAll(false); setWeekOffset(w => w - 1); }}
+              className="w-8 h-8 rounded-lg flex items-center justify-center text-sm transition-all hover:scale-105 active:scale-95"
+              style={{ background: "var(--card)", border: "1px solid var(--border)", color: "var(--muted)" }}>
+              &larr;
+            </button>
+            <div className="px-4 py-1.5 rounded-lg text-sm font-medium" style={{ background: "var(--card)", border: "1px solid var(--border)", color: "var(--foreground)" }}>
+              {showAll ? `All ${allPosts.length} posts` : `Week ${currentWeek + 1} / ${totalWeeks}`}
+            </div>
+            <button onClick={() => { setShowAll(false); setWeekOffset(w => w + 1); }}
+              className="w-8 h-8 rounded-lg flex items-center justify-center text-sm transition-all hover:scale-105 active:scale-95"
+              style={{ background: "var(--card)", border: "1px solid var(--border)", color: "var(--muted)" }}>
+              &rarr;
+            </button>
+          </div>
+          <div className="flex gap-1.5">
+            <button onClick={() => { setShowAll(false); setWeekOffset(0); }}
+              className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
+              style={!showAll ? { background: "var(--accent)", color: "white" } : { background: "var(--muted-light)", color: "var(--muted)" }}>
+              This Week
+            </button>
+            <button onClick={() => setShowAll(!showAll)}
+              className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
+              style={showAll ? { background: "var(--accent)", color: "white" } : { background: "var(--muted-light)", color: "var(--muted)" }}>
+              All
+            </button>
+          </div>
         </div>
-      </main>
+
+        {/* Posts list */}
+        <div className="rounded-xl overflow-hidden animate-fade-up" style={{ background: "var(--card)", border: "1px solid var(--border)", boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
+          {displayPosts.length === 0 ? (
+            <div className="p-12 text-center">
+              <p className="text-base mb-2" style={{ color: "var(--muted)" }}>No templates yet</p>
+              <Link href="/posts/new" className="text-sm font-semibold" style={{ color: "var(--accent)" }}>Create your first post &rarr;</Link>
+            </div>
+          ) : (
+            <div className="stagger">
+              {displayPosts.map((post, i) => {
+                let img: string | null = null;
+                try { const imgs = JSON.parse(post.images); if (imgs.length > 0) img = imgs[0]; } catch {}
+                return (
+                  <div key={post.id} className="animate-slide-in flex items-center group transition-colors"
+                    style={{ borderBottom: i < displayPosts.length - 1 ? "1px solid var(--border)" : "none" }}
+                    onMouseEnter={(e) => e.currentTarget.style.background = "var(--muted-light)"}
+                    onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}>
+                    <Link href={`/posts/${post.id}`} className="flex items-center flex-1 min-w-0 py-3 px-4">
+                      <span className="text-[11px] font-mono w-6 flex-shrink-0" style={{ color: "var(--muted)" }}>{String(i + 1).padStart(2, "0")}</span>
+                      {img ? (
+                        <img src={img} alt="" className="w-9 h-9 rounded-md object-cover flex-shrink-0 mr-3 shadow-sm" />
+                      ) : (
+                        <div className="w-9 h-9 rounded-md flex-shrink-0 mr-3" style={{ background: "var(--muted-light)" }} />
+                      )}
+                      <div className="min-w-0 flex-1">
+                        <p className="text-[13px] font-semibold truncate" style={{ color: "var(--foreground)" }}>{post.title}</p>
+                        <p className="text-[11px] mt-0.5" style={{ color: "var(--muted)" }}>{post.category} &middot; {post.location || "no location"}</p>
+                      </div>
+                    </Link>
+                    <div className="flex items-center gap-1 pr-3 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button onClick={() => handleCopy(post)}
+                        className="px-2.5 py-1 text-[11px] font-medium rounded-md transition-all hover:scale-105 active:scale-95"
+                        style={{ background: copied === post.id ? "var(--success-light)" : "var(--muted-light)", color: copied === post.id ? "var(--success)" : "var(--muted)" }}>
+                        {copied === post.id ? "Copied!" : "Copy"}
+                      </button>
+                      <button onClick={() => handlePostNow(post.id)}
+                        className="px-2.5 py-1 text-[11px] font-medium rounded-md transition-all hover:scale-105 active:scale-95"
+                        style={{ background: "var(--success-light)", color: "var(--success)" }}>
+                        Post
+                      </button>
+                      <Link href={`/posts/${post.id}?edit=true`}
+                        className="px-2.5 py-1 text-[11px] font-medium rounded-md transition-all hover:scale-105 active:scale-95"
+                        style={{ background: "var(--muted-light)", color: "var(--muted)" }}>
+                        Edit
+                      </Link>
+                      <button onClick={() => handleDelete(post.id)}
+                        className="px-2 py-1 text-[11px] font-medium rounded-md transition-all hover:scale-105 active:scale-95 hover:bg-red-50 hover:text-red-600"
+                        style={{ color: "#ccc" }}>
+                        &times;
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* Activity + CLI side by side */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-6">
+          {/* Recent Activity */}
+          {logs.length > 0 && (
+            <div className="rounded-xl overflow-hidden animate-fade-up" style={{ background: "var(--card)", border: "1px solid var(--border)", boxShadow: "0 1px 3px rgba(0,0,0,0.04)", animationDelay: "100ms" }}>
+              <div className="px-4 py-3" style={{ borderBottom: "1px solid var(--border)" }}>
+                <h2 className="text-xs font-bold tracking-wider uppercase" style={{ color: "var(--muted)" }}>Activity</h2>
+              </div>
+              <div>
+                {logs.slice(0, 6).map((log, i) => (
+                  <div key={log.id} className="flex items-center gap-2.5 px-4 py-2.5 text-[12px]"
+                    style={{ borderBottom: i < 5 ? "1px solid var(--muted-light)" : "none" }}>
+                    <span className="w-2 h-2 rounded-full flex-shrink-0" style={{
+                      background: log.status === "posted" ? "var(--success)" : log.status === "pending" ? "#F59F00" : "#E03131"
+                    }} />
+                    <span className="flex-1 truncate" style={{ color: "var(--foreground)" }}>{log.title_used}</span>
+                    <span style={{ color: "var(--muted)" }}>{new Date(log.posted_at + "Z").toLocaleDateString()}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* CLI */}
+          <div className="rounded-xl overflow-hidden animate-fade-up" style={{ background: "#1E1E1E", border: "1px solid #333", boxShadow: "0 1px 3px rgba(0,0,0,0.1)", animationDelay: "150ms" }}>
+            <div className="px-4 py-3 flex items-center gap-2" style={{ borderBottom: "1px solid #333" }}>
+              <span className="w-2.5 h-2.5 rounded-full bg-red-500" />
+              <span className="w-2.5 h-2.5 rounded-full bg-yellow-500" />
+              <span className="w-2.5 h-2.5 rounded-full bg-green-500" />
+              <span className="text-[11px] font-mono ml-2 text-gray-500">terminal</span>
+            </div>
+            <div className="p-4 font-mono text-[12px] leading-relaxed space-y-1.5">
+              <p><span className="text-green-400">$</span> <span className="text-gray-300">npx ts-node cli/post.ts</span> <span className="text-amber-400">list</span></p>
+              <p><span className="text-green-400">$</span> <span className="text-gray-300">npx ts-node cli/post.ts</span> <span className="text-amber-400">post 1</span></p>
+              <p><span className="text-green-400">$</span> <span className="text-gray-300">npx ts-node cli/post.ts</span> <span className="text-amber-400">rotate 10</span></p>
+              <p><span className="text-green-400">$</span> <span className="text-gray-300">npx ts-node cli/post.ts</span> <span className="text-amber-400">status</span></p>
+              <p><span className="text-green-400">$</span> <span className="text-gray-300">npx ts-node cli/post.ts</span> <span className="text-amber-400">cooldown</span></p>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

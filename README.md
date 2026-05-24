@@ -1,36 +1,47 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# CL Poster
 
-## Getting Started
+Craigslist post manager with weekly rotation, Playwright auto-posting, and CLI tools.
 
-First, run the development server:
+![Next.js](https://img.shields.io/badge/Next.js-16-black) ![TypeScript](https://img.shields.io/badge/TypeScript-5-blue) ![Tailwind](https://img.shields.io/badge/Tailwind-4-06B6D4) ![SQLite](https://img.shields.io/badge/SQLite-local-green)
+
+## Features
+
+- 100 post templates with 10/week auto-rotation
+- One-click copy to clipboard
+- Playwright CLI for semi-automated CL posting
+- 48-hour cooldown enforcement per category
+- Title/description rotation to avoid duplicate detection
+- Post history tracking
+
+## Setup
 
 ```bash
+npm install
+npx playwright install chromium
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## CLI
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+npx ts-node cli/post.ts list        # List templates
+npx ts-node cli/post.ts post 1      # Post template #1 via Playwright
+npx ts-node cli/post.ts rotate 10   # Generate 10 title variations
+npx ts-node cli/post.ts status      # Show posting history
+npx ts-node cli/post.ts cooldown    # Check 48hr cooldowns
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## URLs
 
-## Learn More
+| Env | URL |
+|-----|-----|
+| Local | http://localhost:3009 |
+| Caddy | http://cl-poster.localhost |
 
-To learn more about Next.js, take a look at the following resources:
+## Conventions
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- `feat:` new feature
+- `fix:` bug fix
+- `chore:` maintenance (skips Vercel deploy)
+- `docs:` documentation
+- `refactor:` code restructuring
